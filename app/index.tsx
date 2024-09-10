@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
@@ -16,8 +18,16 @@ import { HistoryItem } from '@/types/history';
 import { Colors } from '@/constants/Colors';
 
 export default function HomeScreen() {
-  const { data, loading, error } = useHistoryData();
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
+
+  function handleDateChange(event: DateTimePickerEvent, selectedDate?: Date) {
+    const currentDate = selectedDate || date;
+    setShowPicker(Platform.OS === 'ios');
+    setDate(currentDate);
+  }
 
   function handlePress(item: HistoryItem) {
     router.push({
@@ -67,8 +77,8 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bugün</Text>
-          <TouchableOpacity style={styles.calendarButton}>
+          <Text style={styles.headerTitle}>Tarihte Bugün</Text>
+          <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
             <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
           </TouchableOpacity>
         </View>
@@ -80,6 +90,16 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+        {showPicker && (
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={date}
+            mode="date"
+            is24Hour={true}
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -109,7 +129,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 8,
   },
   headerTitle: {

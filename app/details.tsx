@@ -1,16 +1,19 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, Linking, ScrollView, StatusBar } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, Linking, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { View, Text } from '@/components/Themed';
 import { HistoryItem } from '@/types/history';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { translateText } from '@/services/translationService';
 
 export default function DetailsScreen() {
   const { event: eventString } = useLocalSearchParams<{ event: string }>();
   const router = useRouter();
+  const [translatedText, setTranslatedText] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
 
   if (!eventString) {
     return (
@@ -21,6 +24,17 @@ export default function DetailsScreen() {
   }
 
   const event: HistoryItem = JSON.parse(eventString);
+
+  useEffect(() => {
+    async function getTranslation() {
+      setIsTranslating(true);
+      const translation = await translateText(event.text);
+      setTranslatedText(translation);
+      setIsTranslating(false);
+    }
+
+    getTranslation();
+  }, [event.text]);
 
   function handleWikipediaLink() {
     const link = event.links[event.links.length - 1]?.link;
@@ -53,6 +67,12 @@ export default function DetailsScreen() {
         </View>
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText}>{event.text}</Text>
+          <View style={styles.divider} />
+          {isTranslating ? (
+            <ActivityIndicator style={{ marginTop: 20 }} size="small" />
+          ) : (
+            <Text style={styles.descriptionText}>{translatedText}</Text>
+          )}
         </View>
       </ScrollView>
       <View style={styles.footer}>
@@ -143,6 +163,11 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 28,
     color: '#374151',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 24,
   },
   footer: {
     padding: 16,

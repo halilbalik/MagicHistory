@@ -10,7 +10,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import MonthDayPicker from '@/components/MonthDayPicker';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
@@ -23,10 +23,11 @@ export default function HomeScreen() {
   const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
 
-  function handleDateChange(event: DateTimePickerEvent, selectedDate?: Date) {
-    const currentDate = selectedDate || date;
-    setShowPicker(Platform.OS === 'ios');
-    setDate(currentDate);
+  function handleDateChange(selected: { month: number; day: number }) {
+    const newDate = new Date();
+    newDate.setMonth(selected.month);
+    newDate.setDate(selected.day);
+    setDate(newDate);
   }
 
   function handlePress(item: HistoryItem) {
@@ -34,6 +35,27 @@ export default function HomeScreen() {
       pathname: '/details',
       params: { event: JSON.stringify(item) },
     });
+  }
+
+  function formatTurkishDate(dateString?: string): string {
+    if (!dateString) return '';
+    const [month, day] = dateString.split(' ');
+    const monthTranslations: { [key: string]: string } = {
+      January: 'Ocak',
+      February: 'Şubat',
+      March: 'Mart',
+      April: 'Nisan',
+      May: 'Mayıs',
+      June: 'Haziran',
+      July: 'Temmuz',
+      August: 'Ağustos',
+      September: 'Eylül',
+      October: 'Ekim',
+      November: 'Kasım',
+      December: 'Aralık',
+    };
+    const turkishMonth = monthTranslations[month] || month;
+    return `${day} ${turkishMonth}`;
   }
 
   if (loading) {
@@ -82,7 +104,7 @@ export default function HomeScreen() {
             <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.subHeader}>{data?.date}</Text>
+        <Text style={styles.subHeader}>{formatTurkishDate(data?.date)}</Text>
         <FlatList
           data={data?.data.Events}
           renderItem={renderItem}
@@ -90,16 +112,12 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
-        {showPicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode="date"
-            is24Hour={true}
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
+        <MonthDayPicker
+          visible={showPicker}
+          onClose={() => setShowPicker(false)}
+          onSelect={handleDateChange}
+          currentDate={date}
+        />
       </View>
     </SafeAreaView>
   );

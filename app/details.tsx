@@ -1,30 +1,29 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, Linking, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import {
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  ScrollView,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { View, Text } from '@/components/Themed';
 import { HistoryItem } from '@/types/history';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { getDetailedExplanation, translateText } from '@/services/translationService';
+import { useWikipediaImage } from '@/hooks/useWikipediaImage';
+import { Colors } from '@/constants/Colors';
 
-export default function DetailsScreen() {
-  const { event: eventString } = useLocalSearchParams<{ event: string }>();
-  const router = useRouter();
+function DetailsContent({ event }: { event: HistoryItem }) {
+  const { imageUrl: wikipediaImageUrl } = useWikipediaImage(event.links);
   const [translatedText, setTranslatedText] = useState('');
   const [detailedExplanation, setDetailedExplanation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
-
-  if (!eventString) {
-    return (
-      <View style={styles.center}>
-        <Text>Olay bilgisi bulunamadı.</Text>
-      </View>
-    );
-  }
-
-  const event: HistoryItem = JSON.parse(eventString);
+  const router = useRouter();
 
   useEffect(() => {
     async function getContent() {
@@ -37,9 +36,8 @@ export default function DetailsScreen() {
       setDetailedExplanation(explanation);
       setIsTranslating(false);
     }
-
     getContent();
-  }, [event.text]);
+  }, [event]);
 
   function handleWikipediaLink() {
     const link = event.links[event.links.length - 1]?.link;
@@ -49,40 +47,57 @@ export default function DetailsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+    <>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={'#111827'} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Tarihte Bugün</Text>
+        <View style={{ width: 40 }} />
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: `https://picsum.photos/seed/${event.year}/800/600` }}
+            source={wikipediaImageUrl ? { uri: wikipediaImageUrl } : require('@/assets/images/icon.png')}
             style={styles.image}
             contentFit="cover"
           />
-          <View style={styles.imageOverlay} />
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Tarihte Bugün</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <View style={styles.titleContainer}>
-            <Text style={styles.imageTitle}>{`${event.year} - ${event.text}`}</Text>
-          </View>
         </View>
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionText}>{event.text}</Text>
-          <View style={styles.divider} />
+
+        <View style={styles.contentContainer}>
+          <Text style={styles.eventTitle}>{event.text}</Text>
+
+          <View style={[styles.sectionContainer, { borderLeftColor: '#FF3B30' }]}>
+            <Text style={styles.sectionTitle}>Orijinal Metin</Text>
+            <Text style={styles.descriptionText}>{event.text}</Text>
+          </View>
+
           {isTranslating ? (
-            <ActivityIndicator style={{ marginTop: 20 }} size="small" />
+            <ActivityIndicator style={{ marginVertical: 20 }} size="small" />
           ) : (
             <>
-              <Text style={styles.descriptionText}>{translatedText}</Text>
+              <View style={[styles.sectionContainer, { borderLeftColor: '#34C759' }]}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Türkçe Çeviri</Text>
+                  <View style={styles.geminiChip}>
+                    <Ionicons name="sparkles" size={12} color="#6B46C1" />
+                    <Text style={styles.geminiChipText}>Gemini AI</Text>
+                  </View>
+                </View>
+                <Text style={styles.descriptionText}>{translatedText}</Text>
+              </View>
+
               {detailedExplanation && (
-                <>
-                  <View style={styles.divider} />
+                <View style={[styles.sectionContainer, { borderLeftColor: '#007AFF' }]}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Detaylı Anlatım</Text>
+                    <View style={styles.geminiChip}>
+                      <Ionicons name="sparkles" size={12} color="#6B46C1" />
+                      <Text style={styles.geminiChipText}>Gemini AI</Text>
+                    </View>
+                  </View>
                   <Text style={styles.descriptionText}>{detailedExplanation}</Text>
-                </>
+                </View>
               )}
             </>
           )}
@@ -96,6 +111,29 @@ export default function DetailsScreen() {
           <Text style={styles.wikipediaButtonText}>Wikipedia'da Oku</Text>
         </TouchableOpacity>
       </View>
+    </>
+  );
+}
+
+export default function DetailsScreen() {
+  const { event: eventString } = useLocalSearchParams<{ event: string }>();
+
+  if (!eventString) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.center}>
+          <Text>Olay bilgisi bulunamadı.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const event: HistoryItem = JSON.parse(eventString);
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <DetailsContent event={event} />
     </SafeAreaView>
   );
 }
@@ -105,26 +143,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  container: {
+    flex: 1,
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   header: {
-    position: 'absolute',
-    top: StatusBar.currentHeight || 40,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    zIndex: 1,
-    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -133,58 +170,66 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: '#111827',
   },
   scrollContent: {
     flexGrow: 1,
   },
   imageContainer: {
     width: '100%',
-    height: 350,
+    height: 250,
   },
   image: {
     ...StyleSheet.absoluteFillObject,
   },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  contentContainer: {
+    padding: 20,
   },
-  titleContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
-    backgroundColor: 'transparent',
-  },
-  imageTitle: {
-    color: '#FFFFFF',
-    fontSize: 26,
+  eventTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 24,
+    color: '#111827',
     lineHeight: 32,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
   },
-  descriptionContainer: {
-    padding: 24,
-    backgroundColor: '#F9FAFB',
+  sectionContainer: {
+    marginBottom: 24,
+    paddingLeft: 16,
+    borderLeftWidth: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  geminiChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EDE9FE',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  geminiChipText: {
+    marginLeft: 5,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B46C1',
   },
   descriptionText: {
     fontSize: 17,
     lineHeight: 28,
     color: '#374151',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 24,
-  },
   footer: {
     padding: 16,
-    paddingBottom: 32, // For safe area
+    paddingBottom: 16,
     backgroundColor: '#F9FAFB',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',

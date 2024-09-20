@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { Image } from 'expo-image';
+import EventCard from '@/components/EventCard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -76,23 +76,7 @@ export default function HomeScreen() {
   }
 
   function renderItem({ item }: { item: HistoryItem }) {
-    return (
-      <TouchableOpacity onPress={() => handlePress(item)} style={styles.card}>
-        <Image
-          source={{ uri: `https://picsum.photos/seed/${item.year}/100/100` }}
-          style={styles.image}
-          contentFit="cover"
-          transition={300}
-        />
-        <View style={styles.textContainer}>
-          <Text style={styles.eventText} numberOfLines={2}>
-            {item.text}
-          </Text>
-          <Text style={styles.yearText}>{item.year}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
-      </TouchableOpacity>
-    );
+    return <EventCard item={item} onPress={() => handlePress(item)} />;
   }
 
   return (

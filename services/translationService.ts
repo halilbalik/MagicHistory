@@ -21,3 +21,22 @@ export async function translateText(text: string): Promise<string> {
     return 'Metin çevrilirken bir hata oluştu.';
   }
 }
+
+export async function getDetailedExplanation(text: string): Promise<string> {
+  if (!AppSettings.GEMINI_API_KEY || AppSettings.GEMINI_API_KEY === 'YAPI_ANAHTARINIZI_BURAYA_GIRIN') {
+    return ''; // Don't show an error, just return empty if key is not set
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `Aşağıdaki tarihi olay hakkında Türkçe olarak, bir paragraf halinde daha detaylı bir açıklama yaz: "${text}"`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const detailedText = response.text();
+    return detailedText;
+  } catch (error) {
+    console.error('Detailed explanation error:', error);
+    return 'Detaylı açıklama alınırken bir hata oluştu.';
+  }
+}

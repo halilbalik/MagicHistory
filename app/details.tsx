@@ -7,12 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, Text } from '@/components/Themed';
 import { HistoryItem } from '@/types/history';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { translateText } from '@/services/translationService';
+import { getDetailedExplanation, translateText } from '@/services/translationService';
 
 export default function DetailsScreen() {
   const { event: eventString } = useLocalSearchParams<{ event: string }>();
   const router = useRouter();
   const [translatedText, setTranslatedText] = useState('');
+  const [detailedExplanation, setDetailedExplanation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
 
   if (!eventString) {
@@ -26,14 +27,18 @@ export default function DetailsScreen() {
   const event: HistoryItem = JSON.parse(eventString);
 
   useEffect(() => {
-    async function getTranslation() {
+    async function getContent() {
       setIsTranslating(true);
-      const translation = await translateText(event.text);
+      const [translation, explanation] = await Promise.all([
+        translateText(event.text),
+        getDetailedExplanation(event.text),
+      ]);
       setTranslatedText(translation);
+      setDetailedExplanation(explanation);
       setIsTranslating(false);
     }
 
-    getTranslation();
+    getContent();
   }, [event.text]);
 
   function handleWikipediaLink() {
@@ -71,7 +76,15 @@ export default function DetailsScreen() {
           {isTranslating ? (
             <ActivityIndicator style={{ marginTop: 20 }} size="small" />
           ) : (
-            <Text style={styles.descriptionText}>{translatedText}</Text>
+            <>
+              <Text style={styles.descriptionText}>{translatedText}</Text>
+              {detailedExplanation && (
+                <>
+                  <View style={styles.divider} />
+                  <Text style={styles.descriptionText}>{detailedExplanation}</Text>
+                </>
+              )}
+            </>
           )}
         </View>
       </ScrollView>

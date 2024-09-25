@@ -17,9 +17,18 @@ import { useHistoryData } from '@/hooks/useHistoryData';
 import { HistoryItem } from '@/types/history';
 import { Colors } from '@/constants/Colors';
 
+type Category = 'Events' | 'Births' | 'Deaths';
+
+const filterCategories: { label: string; category: Category }[] = [
+  { label: 'Olaylar', category: 'Events' },
+  { label: 'Doğumlar', category: 'Births' },
+  { label: 'Ölümler', category: 'Deaths' },
+];
+
 export default function HomeScreen() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category>('Events');
   const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
 
@@ -33,7 +42,10 @@ export default function HomeScreen() {
   function handlePress(item: HistoryItem) {
     router.push({
       pathname: '/details',
-      params: { event: JSON.stringify(item) },
+      params: { 
+        event: JSON.stringify(item),
+        date: data?.date 
+      },
     });
   }
 
@@ -57,6 +69,8 @@ export default function HomeScreen() {
     const turkishMonth = monthTranslations[month] || month;
     return `${day} ${turkishMonth}`;
   }
+
+  const listData = data?.data[selectedCategory] ?? [];
 
   if (loading) {
     return (
@@ -89,8 +103,27 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
         <Text style={styles.subHeader}>{formatTurkishDate(data?.date)}</Text>
+        <View style={styles.filterContainer}>
+          {filterCategories.map(({ label, category }) => (
+            <TouchableOpacity
+              key={label}
+              style={[
+                styles.filterButton,
+                selectedCategory === category && styles.selectedFilterButton,
+              ]}
+              onPress={() => setSelectedCategory(category)}>
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedCategory === category && styles.selectedFilterButtonText,
+                ]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <FlatList
-          data={data?.data.Events}
+          data={listData}
           renderItem={renderItem}
           keyExtractor={(item, index) => `${item.year}-${index}`}
           contentContainerStyle={styles.listContent}
@@ -151,6 +184,28 @@ const styles = StyleSheet.create({
     color: '#111827',
     paddingHorizontal: 16,
     paddingBottom: 16,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  filterButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#E5E7EB',
+  },
+  selectedFilterButton: {
+    backgroundColor: Colors.light.tint,
+  },
+  filterButtonText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+  selectedFilterButtonText: {
+    color: '#FFFFFF',
   },
   listContent: {
     paddingHorizontal: 16,

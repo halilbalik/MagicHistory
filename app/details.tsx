@@ -18,12 +18,33 @@ import { getDetailedExplanation, translateText } from '@/services/translationSer
 import { useWikipediaImage } from '@/hooks/useWikipediaImage';
 import { Colors } from '@/constants/Colors';
 
-function DetailsContent({ event }: { event: HistoryItem }) {
+function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) {
   const { imageUrl: wikipediaImageUrl } = useWikipediaImage(event.links);
   const [translatedText, setTranslatedText] = useState('');
   const [detailedExplanation, setDetailedExplanation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const router = useRouter();
+
+  function formatTurkishDate(dateString?: string): string {
+    if (!dateString) return '';
+    const [month, day] = dateString.split(' ');
+    const monthTranslations: { [key: string]: string } = {
+      January: 'Ocak',
+      February: 'Şubat',
+      March: 'Mart',
+      April: 'Nisan',
+      May: 'Mayıs',
+      June: 'Haziran',
+      July: 'Temmuz',
+      August: 'Ağustos',
+      September: 'Eylül',
+      October: 'Ekim',
+      November: 'Kasım',
+      December: 'Aralık',
+    };
+    const turkishMonth = monthTranslations[month] || month;
+    return `${day} ${turkishMonth}`;
+  }
 
   useEffect(() => {
     async function getContent() {
@@ -52,7 +73,10 @@ function DetailsContent({ event }: { event: HistoryItem }) {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={'#111827'} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tarihte Bugün</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Tarihte Bugün</Text>
+          {date && <Text style={styles.headerDate}>{` - ${formatTurkishDate(date)}`}</Text>}
+        </View>
         <View style={{ width: 40 }} />
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -116,7 +140,7 @@ function DetailsContent({ event }: { event: HistoryItem }) {
 }
 
 export default function DetailsScreen() {
-  const { event: eventString } = useLocalSearchParams<{ event: string }>();
+  const { event: eventString, date } = useLocalSearchParams<{ event: string; date?: string }>();
 
   if (!eventString) {
     return (
@@ -133,7 +157,7 @@ export default function DetailsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <DetailsContent event={event} />
+      <DetailsContent event={event} date={date} />
     </SafeAreaView>
   );
 }
@@ -167,10 +191,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerTitleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'baseline',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  headerDate: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.light.secondaryText,
+    marginLeft: 4,
   },
   scrollContent: {
     flexGrow: 1,

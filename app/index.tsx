@@ -10,7 +10,7 @@ import EventCard from '@/components/EventCard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MonthDayPicker from '@/components/MonthDayPicker';
+import CalendarPicker from '@/components/CalendarPicker';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
@@ -32,10 +32,7 @@ export default function HomeScreen() {
   const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
 
-  function handleDateChange(selected: { month: number; day: number }) {
-    const newDate = new Date();
-    newDate.setMonth(selected.month);
-    newDate.setDate(selected.day);
+  function handleDateChange(newDate: Date) {
     setDate(newDate);
   }
 
@@ -97,12 +94,14 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Tarihte Bugün</Text>
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
-            <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
-          </TouchableOpacity>
+          <View style={styles.headerCenterContainer}>
+            <Text style={styles.headerTitle}>Tarihte Bugün</Text>
+            <Text style={styles.subHeader}>{` - ${formatTurkishDate(data?.date)}`}</Text>
+            <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
+              <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
+            </TouchableOpacity>
+          </View>
         </View>
-        <Text style={styles.subHeader}>{formatTurkishDate(data?.date)}</Text>
         <View style={styles.filterContainer}>
           {filterCategories.map(({ label, category }) => (
             <TouchableOpacity
@@ -129,7 +128,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
-        <MonthDayPicker
+        <CalendarPicker
           visible={showPicker}
           onClose={() => setShowPicker(false)}
           onSelect={handleDateChange}
@@ -160,30 +159,26 @@ const styles = StyleSheet.create({
     color: Colors.light.secondaryText,
   },
   header: {
+    paddingVertical: 16,
+  },
+  headerCenterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    textAlign: 'center',
-    flex: 1,
-    marginLeft: 48, // To center the title, accounting for the button width
-  },
-  calendarButton: {
-    width: 48,
-    alignItems: 'flex-end',
   },
   subHeader: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.light.secondaryText,
+    marginLeft: 8,
+  },
+  calendarButton: {
+    marginLeft: 16,
   },
   filterContainer: {
     flexDirection: 'row',

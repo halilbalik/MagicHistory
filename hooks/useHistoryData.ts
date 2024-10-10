@@ -1,35 +1,27 @@
 import { useState, useEffect } from 'react';
-import { ApiResponse } from '../types/history';
-
-const API_BASE_URL = 'https://history.muffinlabs.com/date';
+import { ApiResponse } from '@/types/history';
+import { fetchHistoryData } from '@/services/historyService';
 
 export function useHistoryData(date: Date) {
   const [data, setData] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const url = `${API_BASE_URL}/${month}/${day}`;
-
+    async function loadData() {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const result: ApiResponse = await response.json();
+        const result = await fetchHistoryData(date);
         setData(result);
-      } catch (e) {
-        setError(e as Error);
+      } catch (e: any) {
+        setError(e);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchData();
+    loadData();
   }, [date]);
 
   return { data, loading, error };

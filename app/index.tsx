@@ -4,7 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  Platform,
+  Alert,
 } from 'react-native';
 import EventCard from '@/components/EventCard';
 import { useRouter } from 'expo-router';
@@ -14,8 +14,9 @@ import CalendarPicker from '@/components/CalendarPicker';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
-import { HistoryItem } from '@/types/history';
+import { ApiResponse, HistoryItem } from '@/types/history';
 import { Colors } from '@/constants/Colors';
+import { fetchHistoryData } from '@/services/historyService';
 
 type Category = 'Events' | 'Births' | 'Deaths';
 
@@ -28,6 +29,7 @@ const filterCategories: { label: string; category: Category }[] = [
 export default function HomeScreen() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const [isFetchingRandom, setIsFetchingRandom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>('Events');
   const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
@@ -36,12 +38,55 @@ export default function HomeScreen() {
     setDate(newDate);
   }
 
+  async function handleRandomPress() {
+    setIsFetchingRandom(true);
+    try {
+      let eventData: HistoryItem | null = null;
+      let randomDateData: ApiResponse | null = null;
+
+      while (!eventData) {
+        const randomDayOfYear = Math.floor(Math.random() * 365) + 1;
+        const randomDate = new Date(new Date().getFullYear(), 0, randomDayOfYear);
+        const fetchedData = await fetchHistoryData(randomDate);
+
+        const categories = Object.keys(fetchedData.data).filter(
+          (key) => fetchedData.data[key as Category].length > 0
+        ) as Category[];
+
+        if (categories.length > 0) {
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const events = fetchedData.data[randomCategory];
+          if (events.length > 0) {
+            const randomIndex = Math.floor(Math.random() * events.length);
+            eventData = events[randomIndex];
+            randomDateData = fetchedData;
+          }
+        }
+      }
+
+      if (eventData && randomDateData) {
+        router.push({
+          pathname: '/details',
+          params: {
+            event: JSON.stringify(eventData),
+            date: randomDateData.date,
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch random event', err);
+      Alert.alert('Hata', 'Rastgele olay getirilemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setIsFetchingRandom(false);
+    }
+  }
+
   function handlePress(item: HistoryItem) {
     router.push({
       pathname: '/details',
-      params: { 
+      params: {
         event: JSON.stringify(item),
-        date: data?.date 
+        date: data?.date,
       },
     });
   }
@@ -67,6 +112,10 @@ export default function HomeScreen() {
     return `${day} ${turkishMonth}`;
   }
 
+  function renderItem({ item }: { item: HistoryItem }) {
+    return <EventCard item={item} onPress={() => handlePress(item)} />;
+  }
+
   const listData = data?.data[selectedCategory] ?? [];
 
   if (loading) {
@@ -80,14 +129,10 @@ export default function HomeScreen() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Veriler alınırken bir hata oluştu.</Text>
-        <Text style={styles.errorText}>{error.message}</Text>
+        <Text style={styles.errorText}>Veri yüklenirken bir hata oluştu.</Text>
+        <Text style={styles.errorText}>Lütfen daha sonra tekrar deneyin.</Text>
       </View>
     );
-  }
-
-  function renderItem({ item }: { item: HistoryItem }) {
-    return <EventCard item={item} onPress={() => handlePress(item)} />;
   }
 
   return (
@@ -99,6 +144,13 @@ export default function HomeScreen() {
             <Text style={styles.subHeader}>{` - ${formatTurkishDate(data?.date)}`}</Text>
             <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
               <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleRandomPress} disabled={isFetchingRandom} style={styles.randomButton}>
+              {isFetchingRandom ? (
+                <ActivityIndicator size="small" color={Colors.light.tint} />
+              ) : (
+                <Ionicons name="shuffle-outline" size={24} color={Colors.light.secondaryText} />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -178,6 +230,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   calendarButton: {
+    marginLeft: 16,
+  },
+  randomButton: {
     marginLeft: 16,
   },
   filterContainer: {

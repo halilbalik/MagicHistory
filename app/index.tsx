@@ -17,6 +17,7 @@ import { useHistoryData } from '@/hooks/useHistoryData';
 import { ApiResponse, HistoryItem } from '@/types/history';
 import { Colors } from '@/constants/Colors';
 import { fetchHistoryData } from '@/services/historyService';
+import { formatTurkishDate } from '@/utils/dateUtils';
 
 type Category = 'Events' | 'Births' | 'Deaths';
 
@@ -91,26 +92,6 @@ export default function HomeScreen() {
     });
   }
 
-  function formatTurkishDate(dateString?: string): string {
-    if (!dateString) return '';
-    const [month, day] = dateString.split(' ');
-    const monthTranslations: { [key: string]: string } = {
-      January: 'Ocak',
-      February: 'Şubat',
-      March: 'Mart',
-      April: 'Nisan',
-      May: 'Mayıs',
-      June: 'Haziran',
-      July: 'Temmuz',
-      August: 'Ağustos',
-      September: 'Eylül',
-      October: 'Ekim',
-      November: 'Kasım',
-      December: 'Aralık',
-    };
-    const turkishMonth = monthTranslations[month] || month;
-    return `${day} ${turkishMonth}`;
-  }
 
   function renderItem({ item }: { item: HistoryItem }) {
     return <EventCard item={item} onPress={() => handlePress(item)} />;
@@ -194,7 +175,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.light.background,
   },
   container: {
     flex: 1,
@@ -203,7 +184,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.light.background,
   },
   errorText: {
     textAlign: 'center',
@@ -221,7 +202,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
+    color: Colors.light.headerText,
   },
   subHeader: {
     fontSize: 20,
@@ -245,17 +226,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.light.filterButtonBg,
   },
   selectedFilterButton: {
     backgroundColor: Colors.light.tint,
   },
   filterButtonText: {
-    color: '#374151',
+    color: Colors.light.filterButtonText,
     fontWeight: '600',
   },
   selectedFilterButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.card,
   },
   listContent: {
     paddingHorizontal: 16,
@@ -264,7 +245,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.card,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
@@ -290,7 +271,7 @@ const styles = StyleSheet.create({
   eventText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Colors.light.eventText,
     lineHeight: 20,
   },
   yearText: {

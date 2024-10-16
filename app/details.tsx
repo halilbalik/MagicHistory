@@ -17,6 +17,7 @@ import { HistoryItem } from '@/types/history';
 import { getDetailedExplanation, translateText } from '@/services/translationService';
 import { useWikipediaImage } from '@/hooks/useWikipediaImage';
 import { Colors } from '@/constants/Colors';
+import { formatTurkishDate } from '@/utils/dateUtils';
 
 function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) {
   const { imageUrl: wikipediaImageUrl } = useWikipediaImage(event.links);
@@ -25,26 +26,6 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
   const [isTranslating, setIsTranslating] = useState(false);
   const router = useRouter();
 
-  function formatTurkishDate(dateString?: string): string {
-    if (!dateString) return '';
-    const [month, day] = dateString.split(' ');
-    const monthTranslations: { [key: string]: string } = {
-      January: 'Ocak',
-      February: 'Şubat',
-      March: 'Mart',
-      April: 'Nisan',
-      May: 'Mayıs',
-      June: 'Haziran',
-      July: 'Temmuz',
-      August: 'Ağustos',
-      September: 'Eylül',
-      October: 'Ekim',
-      November: 'Kasım',
-      December: 'Aralık',
-    };
-    const turkishMonth = monthTranslations[month] || month;
-    return `${day} ${turkishMonth}`;
-  }
 
   useEffect(() => {
     async function getContent() {
@@ -71,7 +52,7 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
     <>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={'#111827'} />
+          <Ionicons name="arrow-back" size={24} color={Colors.light.headerText} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Tarihte Bugün</Text>
@@ -165,7 +146,7 @@ export default function DetailsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.light.background,
   },
   container: {
     flex: 1,
@@ -197,7 +178,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
+    color: Colors.light.headerText,
   },
   headerDate: {
     fontSize: 17,
@@ -222,7 +203,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 24,
-    color: '#111827',
+    color: Colors.light.headerText,
     lineHeight: 32,
   },
   sectionContainer: {
@@ -239,12 +220,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: Colors.light.eventText,
   },
   geminiChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EDE9FE',
+    backgroundColor: Colors.light.geminiChipBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -253,22 +234,22 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B46C1',
+    color: Colors.light.geminiChipText,
   },
   descriptionText: {
     fontSize: 17,
     lineHeight: 28,
-    color: '#374151',
+    color: Colors.light.descriptionText,
   },
   footer: {
     padding: 16,
     paddingBottom: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.light.background,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.light.footerBorder,
   },
   wikipediaButton: {
-    backgroundColor: '#1F2937',
+    backgroundColor: Colors.light.wikipediaButtonBg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -284,7 +265,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   wikipediaButtonText: {
-    color: '#FFFFFF',
+    color: Colors.light.card,
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,

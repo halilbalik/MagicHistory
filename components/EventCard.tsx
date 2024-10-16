@@ -38,7 +38,7 @@ export default function EventCard({ item, onPress }: EventCardProps) {
         </Text>
         <Text style={styles.yearText}>{item.year}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
+      <Ionicons name="chevron-forward" size={24} color={Colors.light.chevronColor} />
     </TouchableOpacity>
   );
 }
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.light.card,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.light.imageContainerBg,
   },
   image: {
     width: '100%',
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   eventText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: Colors.light.eventText,
     lineHeight: 20,
   },
   yearText: {

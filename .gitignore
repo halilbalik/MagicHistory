@@ -41,3 +41,4 @@ app-example
 .cursor
 documentation
 appsettings.js
+.env

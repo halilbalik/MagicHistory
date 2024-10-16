@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import AppSettings from '../appsettings';
+import AppSettings from '@/constants/AppSettings';
 
 const genAI = new GoogleGenerativeAI(AppSettings.GEMINI_API_KEY);
 
 export async function translateText(text: string): Promise<string> {
   if (!AppSettings.GEMINI_API_KEY || AppSettings.GEMINI_API_KEY === 'YAPI_ANAHTARINIZI_BURAYA_GIRIN') {
-    return 'API anahtarı geçerli değil. Lütfen appsettings.js dosyasını kontrol edin.';
+    return 'API anahtarı geçerli değil. Lütfen .env dosyasını kontrol edin.';
   }
 
   try {

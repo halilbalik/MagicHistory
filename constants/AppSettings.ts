@@ -1,11 +1,11 @@
-import Constants from 'expo-constants';
+import { GEMINI_API_KEY } from './ApiKeys';
 
 interface AppSettingsType {
   GEMINI_API_KEY: string;
 }
 
 const AppSettings: AppSettingsType = {
-  GEMINI_API_KEY: Constants.expoConfig?.extra?.geminiApiKey || 'YAPI_ANAHTARINIZI_BURAYA_GIRIN',
+  GEMINI_API_KEY: GEMINI_API_KEY,
 };
 
 export default AppSettings;

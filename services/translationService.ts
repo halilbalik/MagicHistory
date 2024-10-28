@@ -28,7 +28,7 @@ export async function translateText(text: string): Promise<string> {
 
 export async function getDetailedExplanation(text: string): Promise<string> {
   if (!genAI) {
-    return ''; // Don't show an error, just return empty if key is not set
+    return ''; 
   }
 
   try {

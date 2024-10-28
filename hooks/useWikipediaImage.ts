@@ -13,7 +13,6 @@ export function useWikipediaImage(links: HistoryLink[]) {
         return;
       }
 
-      // Attempt to get an image from the last link, which is often the main subject
       const mainSubjectLink = links[links.length - 1];
       setLoading(true);
       const url = await getWikipediaImage(mainSubjectLink.title);

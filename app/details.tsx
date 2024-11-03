@@ -7,6 +7,7 @@ import {
   ScrollView,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +15,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { View, Text } from '@/components/Themed';
 import { HistoryItem } from '@/types/history';
-import { getDetailedExplanation, translateText } from '@/services/translationService';
+import { fetchHistoryData } from '@/services/historyService';
+import {
+  getDetailedExplanation,
+  getRelatedEvents,
+  RelatedEvent,
+  translateText,
+} from '@/services/translationService';
 import { useWikipediaImage } from '@/hooks/useWikipediaImage';
 import { Colors } from '@/constants/Colors';
 import { formatTurkishDate } from '@/utils/dateUtils';
@@ -23,23 +30,58 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
   const { imageUrl: wikipediaImageUrl } = useWikipediaImage(event.links);
   const [translatedText, setTranslatedText] = useState('');
   const [detailedExplanation, setDetailedExplanation] = useState('');
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [relatedEvents, setRelatedEvents] = useState<RelatedEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
 
   useEffect(() => {
     async function getContent() {
-      setIsTranslating(true);
-      const [translation, explanation] = await Promise.all([
+      setIsLoading(true);
+      const [translation, explanation, related] = await Promise.all([
         translateText(event.text),
         getDetailedExplanation(event.text),
+        getRelatedEvents(event.text),
       ]);
       setTranslatedText(translation);
       setDetailedExplanation(explanation);
-      setIsTranslating(false);
+      setRelatedEvents(related);
+      setIsLoading(false);
     }
     getContent();
   }, [event]);
+
+  async function handleRelatedEventPress(relatedEvent: RelatedEvent) {
+    setIsNavigating(true);
+    try {
+      const { month, day } = relatedEvent.date;
+      const targetDate = new Date(new Date().getFullYear(), month - 1, day);
+
+      const newData = await fetchHistoryData(targetDate);
+      const allItems = [...(newData.data.Events || []), ...(newData.data.Births || []), ...(newData.data.Deaths || [])];
+
+      const foundEvent = allItems.find(
+        (item) => item.text.includes(relatedEvent.text) || relatedEvent.text.includes(item.text)
+      );
+
+      if (foundEvent) {
+        router.push({
+          pathname: '/details',
+          params: {
+            event: JSON.stringify(foundEvent),
+            date: newData.date,
+          },
+        });
+      } else {
+        Alert.alert('Bulunamadı', 'İlgili olayın detayı getirilemedi.');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'İlgili olaya gidilirken bir sorun oluştu.');
+    } finally {
+      setIsNavigating(false);
+    }
+  }
 
   function handleWikipediaLink() {
     const link = event.links[event.links.length - 1]?.link;
@@ -50,6 +92,11 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
 
   return (
     <>
+      {isNavigating && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={Colors.light.card} />
+        </View>
+      )}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.light.headerText} />
@@ -77,7 +124,7 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
             <Text style={styles.descriptionText}>{event.text}</Text>
           </View>
 
-          {isTranslating ? (
+          {isLoading ? (
             <ActivityIndicator style={{ marginVertical: 20 }} size="small" />
           ) : (
             <>
@@ -102,6 +149,32 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
                     </View>
                   </View>
                   <Text style={styles.descriptionText}>{detailedExplanation}</Text>
+                </View>
+              )}
+
+              {relatedEvents.length > 0 && (
+                <View style={[styles.sectionContainer, { borderLeftColor: '#FF9500' }]}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>İlgili Olaylar</Text>
+                    <View style={styles.geminiChip}>
+                      <Ionicons name="sparkles" size={12} color="#6B46C1" />
+                      <Text style={styles.geminiChipText}>Gemini AI</Text>
+                    </View>
+                  </View>
+                  {relatedEvents.map((relatedEvent, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.relatedCard}
+                      onPress={() => handleRelatedEventPress(relatedEvent)}>
+                      <View style={styles.relatedTextContainer}>
+                        <Text style={styles.relatedTitle} numberOfLines={2}>
+                          {relatedEvent.text}
+                        </Text>
+                        <Text style={styles.relatedYear}>{relatedEvent.year}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={24} color={Colors.light.chevronColor} />
+                    </TouchableOpacity>
+                  ))}
                 </View>
               )}
             </>
@@ -240,6 +313,37 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 28,
     color: Colors.light.descriptionText,
+  },
+  relatedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.relatedCardBg,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  relatedTextContainer: {
+    flex: 1,
+    marginRight: 12,
+    backgroundColor: 'transparent',
+  },
+  relatedTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.eventText,
+    lineHeight: 22,
+  },
+  relatedYear: {
+    fontSize: 14,
+    color: Colors.light.secondaryText,
+    marginTop: 4,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   footer: {
     padding: 16,

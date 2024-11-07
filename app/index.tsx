@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CalendarPicker from '@/components/CalendarPicker';
+import YearFilterModal from '@/components/YearFilterModal';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
@@ -30,8 +31,10 @@ const filterCategories: { label: string; category: Category }[] = [
 export default function HomeScreen() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const [showYearFilter, setShowYearFilter] = useState(false);
   const [isFetchingRandom, setIsFetchingRandom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>('Events');
+  const [yearFilter, setYearFilter] = useState('');
   const { data, loading, error } = useHistoryData(date);
   const router = useRouter();
 
@@ -97,7 +100,9 @@ export default function HomeScreen() {
     return <EventCard item={item} onPress={() => handlePress(item)} />;
   }
 
-  const listData = data?.data[selectedCategory] ?? [];
+  const listData = (data?.data[selectedCategory] ?? []).filter(
+    (item) => !yearFilter || item.year === yearFilter
+  );
 
   if (loading) {
     return (
@@ -125,6 +130,13 @@ export default function HomeScreen() {
             <Text style={styles.subHeader}>{` - ${formatTurkishDate(data?.date)}`}</Text>
             <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
               <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowYearFilter(true)} style={styles.filterIcon}>
+              <Ionicons
+                name={yearFilter ? 'funnel' : 'funnel-outline'}
+                size={24}
+                color={yearFilter ? Colors.light.tint : Colors.light.secondaryText}
+              />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleRandomPress} disabled={isFetchingRandom} style={styles.randomButton}>
               {isFetchingRandom ? (
@@ -160,12 +172,25 @@ export default function HomeScreen() {
           keyExtractor={(item, index) => `${item.year}-${index}`}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.center}>
+              <Text style={styles.errorText}>
+                {yearFilter ? `${yearFilter} yılı için sonuç bulunamadı.` : 'Bu tarih için veri yok.'}
+              </Text>
+            </View>
+          )}
         />
         <CalendarPicker
           visible={showPicker}
           onClose={() => setShowPicker(false)}
           onSelect={handleDateChange}
           currentDate={date}
+        />
+        <YearFilterModal
+          visible={showYearFilter}
+          onClose={() => setShowYearFilter(false)}
+          onApply={setYearFilter}
+          currentYear={yearFilter}
         />
       </View>
     </SafeAreaView>
@@ -211,6 +236,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   calendarButton: {
+    marginLeft: 16,
+  },
+  filterIcon: {
     marginLeft: 16,
   },
   randomButton: {

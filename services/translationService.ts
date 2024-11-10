@@ -73,3 +73,23 @@ export async function getRelatedEvents(text: string): Promise<RelatedEvent[]> {
     return [];
   }
 }
+
+export async function searchEvents(query: string): Promise<RelatedEvent[]> {
+  if (!genAI) {
+    return [];
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `Find 5 historical events related to the query: \"${query}\". Return your answer ONLY as a JSON array in the following format. Do not add any other text. Example: [{ \"year\": \"1969\", \"text\": \"Apollo 11 lands on the Moon\", \"date\": { \"month\": 7, \"day\": 20 } }]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseText = response.text().replace(/```json|```/g, '').trim();
+    const searchedEvents: RelatedEvent[] = JSON.parse(responseText);
+    return searchedEvents;
+  } catch (error) {
+    console.error('Search events error:', error);
+    return [];
+  }
+}

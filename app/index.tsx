@@ -131,6 +131,9 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.calendarButton}>
               <Ionicons name="calendar-outline" size={24} color={Colors.light.secondaryText} />
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/search')} style={styles.searchIcon}>
+              <Ionicons name="search-outline" size={24} color={Colors.light.secondaryText} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowYearFilter(true)} style={styles.filterIcon}>
               <Ionicons
                 name={yearFilter ? 'funnel' : 'funnel-outline'}
@@ -236,6 +239,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   calendarButton: {
+    marginLeft: 16,
+  },
+  searchIcon: {
     marginLeft: 16,
   },
   filterIcon: {

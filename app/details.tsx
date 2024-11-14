@@ -21,6 +21,7 @@ import {
   getRelatedEvents,
   RelatedEvent,
   translateText,
+  findBestMatch,
 } from '@/services/translationService';
 import { useWikipediaImage } from '@/hooks/useWikipediaImage';
 import { Colors } from '@/constants/Colors';
@@ -60,10 +61,11 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
 
       const newData = await fetchHistoryData(targetDate);
       const allItems = [...(newData.data.Events || []), ...(newData.data.Births || []), ...(newData.data.Deaths || [])];
+      const eventTexts = allItems.map(e => e.text).filter(Boolean) as string[];
 
-      const foundEvent = allItems.find(
-        (item) => item.text.includes(relatedEvent.text) || relatedEvent.text.includes(item.text)
-      );
+      const bestMatchText = await findBestMatch(relatedEvent.text, eventTexts);
+
+      const foundEvent = bestMatchText ? allItems.find(e => e.text === bestMatchText) : null;
 
       if (foundEvent) {
         router.push({

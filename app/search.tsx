@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/Themed';
 import { useRouter } from 'expo-router';
-import { searchEvents, RelatedEvent } from '@/services/translationService';
+import { searchEvents, RelatedEvent, findBestMatch } from '@/services/translationService';
 import { fetchHistoryData } from '@/services/historyService';
 import { Colors } from '@/constants/Colors';
 
@@ -14,6 +14,7 @@ export default function SearchScreen() {
   const [results, setResults] = useState<RelatedEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [failedItems, setFailedItems] = useState<string[]>([]);
   const router = useRouter();
 
   async function handleSearch() {
@@ -26,14 +27,21 @@ export default function SearchScreen() {
   }
 
   async function handleResultPress(item: RelatedEvent) {
+    if (!item?.date?.month || !item?.date?.day) {
+      setFailedItems((prev) => [...prev, item.text]);
+      return;
+    }
+
     setIsNavigating(true);
     try {
       const targetDate = new Date(new Date().getFullYear(), item.date.month - 1, item.date.day);
       const newData = await fetchHistoryData(targetDate);
       const allItems = [...(newData.data.Events || []), ...(newData.data.Births || []), ...(newData.data.Deaths || [])];
-      const foundEvent = allItems.find(
-        (event) => event.text.includes(item.text) || item.text.includes(event.text)
-      );
+      const eventTexts = allItems.map(e => e.text).filter(Boolean) as string[];
+
+      const bestMatchText = await findBestMatch(item.text, eventTexts);
+
+      const foundEvent = bestMatchText ? allItems.find(e => e.text === bestMatchText) : null;
 
       if (foundEvent) {
         router.push({
@@ -41,18 +49,23 @@ export default function SearchScreen() {
           params: { event: JSON.stringify(foundEvent), date: newData.date },
         });
       } else {
-        Alert.alert('Bulunamadı', 'Bu olayın detayı şu anda mevcut değil.');
+        setFailedItems((prev) => [...prev, item.text]);
       }
-    } catch (error) {
-      Alert.alert('Hata', 'Detaylar getirilirken bir sorun oluştu.');
+    } catch (error: any) {
+      console.error('Failed to handle result press:', error);
+      Alert.alert('Hata', `Detaylar getirilirken bir sorun oluştu: ${error.message}`);
     } finally {
       setIsNavigating(false);
     }
   }
 
   function renderItem({ item }: { item: RelatedEvent }) {
+    const isFailed = failedItems.includes(item.text);
     return (
-      <TouchableOpacity style={styles.resultCard} onPress={() => handleResultPress(item)}>
+      <TouchableOpacity
+        style={[styles.resultCard, isFailed && styles.failedCard]}
+        onPress={() => handleResultPress(item)}
+        disabled={isFailed}>
         <View style={styles.resultTextContainer}>
           <Text style={styles.resultText} numberOfLines={2}>{item.text}</Text>
           <Text style={styles.resultYear}>{item.year}</Text>
@@ -190,5 +203,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+  failedCard: {
+    opacity: 0.5,
   },
 });

@@ -81,7 +81,7 @@ export async function searchEvents(query: string): Promise<RelatedEvent[]> {
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Find 5 historical events related to the query: \"${query}\". Return your answer ONLY as a JSON array in the following format. Do not add any other text. Example: [{ \"year\": \"1969\", \"text\": \"Apollo 11 lands on the Moon\", \"date\": { \"month\": 7, \"day\": 20 } }]`;
+    const prompt = `Find up to 5 historical events related to the query: \"${query}\". The 'text' for each event should be a full, clear sentence, similar to a Wikipedia entry title. You MUST provide a specific month and day for each event. If you cannot find a specific date, do not include the event. Return your answer ONLY as a valid JSON array in the following format. Do not add any other text or explanations. Example: [{ \"year\": \"1969\", \"text\": \"Apollo 11 lands on the Moon\", \"date\": { \"month\": 7, \"day\": 20 } }]`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -91,5 +91,25 @@ export async function searchEvents(query: string): Promise<RelatedEvent[]> {
   } catch (error) {
     console.error('Search events error:', error);
     return [];
+  }
+}
+
+export async function findBestMatch(targetText: string, eventList: string[]): Promise<string | null> {
+  if (!genAI || eventList.length === 0) {
+    return null;
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `From the following JSON array of strings, find the single best match for the target text: \"${targetText}\". Return ONLY the string of the best match from the array, with no extra text or quotes. If no good match is found, return an empty string. Event List: ${JSON.stringify(eventList)}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const bestMatch = response.text().trim();
+
+    return bestMatch || null;
+  } catch (error) {
+    console.error('Best match finding error:', error);
+    return null;
   }
 }

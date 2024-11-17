@@ -5,67 +5,54 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/Themed';
 import { useRouter } from 'expo-router';
-import { searchEvents, RelatedEvent, findBestMatch } from '@/services/translationService';
-import { fetchHistoryData } from '@/services/historyService';
+import { searchAndValidateEvents, RelatedEvent } from '@/services/translationService';
 import { Colors } from '@/constants/Colors';
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RelatedEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [failedItems, setFailedItems] = useState<string[]>([]);
   const router = useRouter();
 
+  function handleTextChange(text: string) {
+    setQuery(text);
+  }
+
   async function handleSearch() {
-    if (!query) return;
+    if (query.length < 2) return;
     setLoading(true);
     setResults([]);
-    const searchResults = await searchEvents(query);
+    const searchResults = await searchAndValidateEvents(query);
     setResults(searchResults);
     setLoading(false);
   }
 
-  async function handleResultPress(item: RelatedEvent) {
-    if (!item?.date?.month || !item?.date?.day) {
-      setFailedItems((prev) => [...prev, item.text]);
-      return;
-    }
+  function handleResultPress(item: RelatedEvent) {
+    const eventForDetails = {
+      year: item.year,
+      text: item.text,
+      links: item.links || [],
+      html: '',
+      no_year_html: '',
+    };
 
-    setIsNavigating(true);
-    try {
-      const targetDate = new Date(new Date().getFullYear(), item.date.month - 1, item.date.day);
-      const newData = await fetchHistoryData(targetDate);
-      const allItems = [...(newData.data.Events || []), ...(newData.data.Births || []), ...(newData.data.Deaths || [])];
-      const eventTexts = allItems.map(e => e.text).filter(Boolean) as string[];
+    const dateString = new Date(2000, item.date.month - 1, item.date.day).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+    });
 
-      const bestMatchText = await findBestMatch(item.text, eventTexts);
-
-      const foundEvent = bestMatchText ? allItems.find(e => e.text === bestMatchText) : null;
-
-      if (foundEvent) {
-        router.push({
-          pathname: '/details',
-          params: { event: JSON.stringify(foundEvent), date: newData.date },
-        });
-      } else {
-        setFailedItems((prev) => [...prev, item.text]);
-      }
-    } catch (error: any) {
-      console.error('Failed to handle result press:', error);
-      Alert.alert('Hata', `Detaylar getirilirken bir sorun oluştu: ${error.message}`);
-    } finally {
-      setIsNavigating(false);
-    }
+    router.push({
+      pathname: '/details',
+      params: {
+        event: JSON.stringify(eventForDetails),
+        date: dateString,
+      },
+    });
   }
 
   function renderItem({ item }: { item: RelatedEvent }) {
-    const isFailed = failedItems.includes(item.text);
     return (
-      <TouchableOpacity
-        style={[styles.resultCard, isFailed && styles.failedCard]}
-        onPress={() => handleResultPress(item)}
-        disabled={isFailed}>
+      <TouchableOpacity style={styles.resultCard} onPress={() => handleResultPress(item)}>
         <View style={styles.resultTextContainer}>
           <Text style={styles.resultText} numberOfLines={2}>{item.text}</Text>
           <Text style={styles.resultYear}>{item.year}</Text>
@@ -85,15 +72,17 @@ export default function SearchScreen() {
             placeholder='Olay, kişi veya yıl ara...'
             placeholderTextColor={Colors.light.secondaryText}
             value={query}
-            onChangeText={setQuery}
+            onChangeText={handleTextChange}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-          {query ? (
-            <TouchableOpacity onPress={() => setQuery('')} style={styles.clearIcon}>
-              <Ionicons name="close-circle" size={20} color={Colors.light.secondaryText} />
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity 
+            onPress={handleSearch} 
+            style={[styles.searchButton, !query && styles.searchButtonDisabled]}
+            disabled={!query}
+          >
+            <Ionicons name="search" size={20} color={query ? Colors.light.card : Colors.light.secondaryText} />
+          </TouchableOpacity>
         </View>
 
         {loading ? (
@@ -106,17 +95,17 @@ export default function SearchScreen() {
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={() => (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Tarihte bir yolculuğa çıkın.</Text>
-                <Text style={styles.emptySubText}>Yukarıdaki alana bir anahtar kelime yazarak başlayın.</Text>
+                <Text style={styles.emptyText}>
+                  {query.length > 2 ? 'Sonuç bulunamadı' : 'Tarihte bir yolculuğa çıkın.'}
+                </Text>
+                <Text style={styles.emptySubText}>
+                  {query.length > 2
+                    ? 'Farklı bir anahtar kelime deneyin.'
+                    : 'Olay, kişi veya yıl araması yapın.'}
+                </Text>
               </View>
             )}
           />
-        )}
-
-        {isNavigating && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={Colors.light.card} />
-          </View>
         )}
       </View>
     </SafeAreaView>
@@ -204,7 +193,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  failedCard: {
+  searchButton: {
+    backgroundColor: Colors.light.tint,
+    borderRadius: 8,
+    padding: 8,
+    marginLeft: 8,
+  },
+  searchButtonDisabled: {
+    backgroundColor: Colors.light.background,
     opacity: 0.5,
   },
 });

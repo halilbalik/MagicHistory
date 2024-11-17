@@ -33,6 +33,7 @@ export interface RelatedEvent {
     month: number;
     day: number;
   };
+  links?: { title: string; link: string }[];
 }
 
 export async function getDetailedExplanation(text: string): Promise<string> {
@@ -81,7 +82,7 @@ export async function searchEvents(query: string): Promise<RelatedEvent[]> {
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `Find up to 5 historical events related to the query: \"${query}\". The 'text' for each event should be a full, clear sentence, similar to a Wikipedia entry title. You MUST provide a specific month and day for each event. If you cannot find a specific date, do not include the event. Return your answer ONLY as a valid JSON array in the following format. Do not add any other text or explanations. Example: [{ \"year\": \"1969\", \"text\": \"Apollo 11 lands on the Moon\", \"date\": { \"month\": 7, \"day\": 20 } }]`;
+    const prompt = `Find up to 5 historical events related to the query: \"${query}\". The 'text' for each event should be a full, clear sentence. For each event, provide the 'year', the 'text', a 'date' object with 'month' and 'day', and a 'links' array containing relevant Wikipedia links. Return your answer ONLY as a valid JSON array. Do not add any other text. Example: [{ \"year\": \"1969\", \"text\": \"Apollo 11 lands on the Moon\", \"date\": { \"month\": 7, \"day\": 20 }, \"links\": [{ \"title\": \"Apollo 11\", \"link\": \"https://en.wikipedia.org/wiki/Apollo_11\" }] }]`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -101,7 +102,7 @@ export async function findBestMatch(targetText: string, eventList: string[]): Pr
 
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = `From the following JSON array of strings, find the single best match for the target text: \"${targetText}\". Return ONLY the string of the best match from the array, with no extra text or quotes. If no good match is found, return an empty string. Event List: ${JSON.stringify(eventList)}`;
+    const prompt = `I have a 'target text': \"${targetText}\". I also have a 'database list' of official event texts: ${JSON.stringify(eventList)}. From the 'database list', find the one string that is the best semantic match for the 'target text'. Return ONLY the single best matching string from the list. Do not add any other text, quotes, or explanations. If no good match is found, return an empty string.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -111,5 +112,46 @@ export async function findBestMatch(targetText: string, eventList: string[]): Pr
   } catch (error) {
     console.error('Best match finding error:', error);
     return null;
+  }
+}
+
+export async function searchAndValidateEvents(query: string): Promise<RelatedEvent[]> {
+  if (!genAI) {
+    return [];
+  }
+
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const prompt = `Find the 4 most important historical events related to "${query}". For each event, provide the year, text, exact month and day, and relevant Wikipedia links. Return ONLY a JSON array with this format: [{"year": "1969", "text": "Apollo 11 Moon Landing", "date": {"month": 7, "day": 20}, "links": [{"title": "Apollo 11", "link": "https://en.wikipedia.org/wiki/Apollo_11"}]}]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let responseText = response.text();
+    
+    // Tüm gereksiz karakterleri temizle
+    responseText = responseText
+      .replace(/```json|```/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/\n/g, ' ')
+      .trim();
+    
+    // JSON array'i bulmaya çalış
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.warn('JSON bulunamadı:', responseText);
+      return [];
+    }
+    
+    try {
+      const events: RelatedEvent[] = JSON.parse(jsonMatch[0]);
+      return events.filter(event => event.year && event.text && event.date);
+    } catch (parseError) {
+      console.warn('JSON parse hatası:', jsonMatch[0]);
+      return [];
+    }
+  } catch (error) {
+    console.error('Search and validate error:', error);
+    return [];
   }
 }

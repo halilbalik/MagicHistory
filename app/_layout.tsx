@@ -11,6 +11,7 @@ export default function RootLayout() {
     ...Ionicons.font,
   });
 
+
   if (!loaded) {
     return null;
   }

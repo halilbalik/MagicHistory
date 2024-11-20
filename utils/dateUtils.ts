@@ -1,4 +1,4 @@
-export function formatTurkishDate(dateString?: string): string {
+export function formatTurkishDate(dateString?: string, year?: string): string {
   if (!dateString) return '';
   const [month, day] = dateString.split(' ');
   const monthTranslations: { [key: string]: string } = {
@@ -16,5 +16,8 @@ export function formatTurkishDate(dateString?: string): string {
     December: 'Aralık',
   };
   const turkishMonth = monthTranslations[month] || month;
+  if (year) {
+    return `${day} ${turkishMonth} ${year}`;
+  }
   return `${day} ${turkishMonth}`;
 }

@@ -105,7 +105,7 @@ function DetailsContent({ event, date }: { event: HistoryItem; date?: string }) 
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Tarihte Bugün</Text>
-          {date && <Text style={styles.headerDate}>{` - ${formatTurkishDate(date)}`}</Text>}
+          {date && <Text style={styles.headerDate}>{` - ${formatTurkishDate(date, event.year)}`}</Text>}
         </View>
         <View style={{ width: 40 }} />
       </View>

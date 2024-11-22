@@ -15,10 +15,10 @@ import YearFilterModal from '@/components/YearFilterModal';
 
 import { View, Text } from '@/components/Themed';
 import { useHistoryData } from '@/hooks/useHistoryData';
-import { ApiResponse, HistoryItem } from '@/types/history';
+import { HistoryItem } from '@/types/history';
 import { Colors } from '@/constants/Colors';
-import { fetchHistoryData } from '@/services/historyService';
 import { formatTurkishDate } from '@/utils/dateUtils';
+import { useRandomEvent } from '@/hooks/useRandomEvent';
 
 type Category = 'Events' | 'Births' | 'Deaths';
 
@@ -32,57 +32,14 @@ export default function HomeScreen() {
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [showYearFilter, setShowYearFilter] = useState(false);
-  const [isFetchingRandom, setIsFetchingRandom] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category>('Events');
   const [yearFilter, setYearFilter] = useState('');
   const { data, loading, error } = useHistoryData(date);
+  const { isFetching: isFetchingRandom, fetchRandomEvent } = useRandomEvent();
   const router = useRouter();
 
   function handleDateChange(newDate: Date) {
     setDate(newDate);
-  }
-
-  async function handleRandomPress() {
-    setIsFetchingRandom(true);
-    try {
-      let eventData: HistoryItem | null = null;
-      let randomDateData: ApiResponse | null = null;
-
-      while (!eventData) {
-        const randomDayOfYear = Math.floor(Math.random() * 365) + 1;
-        const randomDate = new Date(new Date().getFullYear(), 0, randomDayOfYear);
-        const fetchedData = await fetchHistoryData(randomDate);
-
-        const categories = Object.keys(fetchedData.data).filter(
-          (key) => fetchedData.data[key as Category].length > 0
-        ) as Category[];
-
-        if (categories.length > 0) {
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const events = fetchedData.data[randomCategory];
-          if (events.length > 0) {
-            const randomIndex = Math.floor(Math.random() * events.length);
-            eventData = events[randomIndex];
-            randomDateData = fetchedData;
-          }
-        }
-      }
-
-      if (eventData && randomDateData) {
-        router.push({
-          pathname: '/details',
-          params: {
-            event: JSON.stringify(eventData),
-            date: randomDateData.date,
-          },
-        });
-      }
-    } catch (err) {
-      console.error('Failed to fetch random event', err);
-      Alert.alert('Hata', 'Rastgele olay getirilemedi. Lütfen tekrar deneyin.');
-    } finally {
-      setIsFetchingRandom(false);
-    }
   }
 
   function handlePress(item: HistoryItem) {
@@ -141,7 +98,7 @@ export default function HomeScreen() {
                 color={yearFilter ? Colors.light.tint : Colors.light.secondaryText}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleRandomPress} disabled={isFetchingRandom} style={styles.randomButton}>
+                        <TouchableOpacity onPress={fetchRandomEvent} disabled={isFetchingRandom} style={styles.randomButton}>
               {isFetchingRandom ? (
                 <ActivityIndicator size="small" color={Colors.light.tint} />
               ) : (

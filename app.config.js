@@ -6,7 +6,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "magichistory",
-    userInterfaceStyle: "automatic",
+    userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
       supportsTablet: true
@@ -21,7 +21,8 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/images/favicon.png",
+      userInterfaceStyle: "light"
     },
     plugins: [
       "expo-router",

@@ -128,7 +128,6 @@ export async function searchAndValidateEvents(query: string): Promise<RelatedEve
     const response = await result.response;
     let responseText = response.text();
     
-    // Tüm gereksiz karakterleri temizle
     responseText = responseText
       .replace(/```json|```/g, '')
       .replace(/\*\*/g, '')
@@ -136,7 +135,6 @@ export async function searchAndValidateEvents(query: string): Promise<RelatedEve
       .replace(/\n/g, ' ')
       .trim();
     
-    // JSON array'i bulmaya çalış
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
       console.warn('JSON bulunamadı:', responseText);
